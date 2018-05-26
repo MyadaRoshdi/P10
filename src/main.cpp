@@ -116,7 +116,8 @@ int main() {
 
 	      // Calculate Initial cte, now transformed points are in vehicle coordinates, so x & y equal 0 below.
 		  // otherwise y shoud be subtracted from the polyeval value
-		  double cte = polyeval(coeffs, 0); // Our target: it to turn cte =0
+		 // double cte = polyeval(coeffs, 0); // Our target: it to turn cte =0
+		  double cte = polyeval(coeffs, x) - y;
 
 		  // Calculate the Initial orientation error
 		 // double epsi = psi - -atan(coeffs[1]+ 2 * px * coeffs[2] + 3 * coeffs[3] * pow(px,2))
