@@ -95,6 +95,7 @@ int main() {
 		  double delta = j[1]["steering_angle"];//The current steering angle in radians.
 		  double a = j[1]["throttle"];//The current throttle value [-1, 1].
 
+		  v = v * 1609. / 3600.; //mph to m/s 
 
 	 // Latency for predicting time at actuation
 		  const double dt = 0.1;
@@ -156,26 +157,25 @@ int main() {
 
 
 		  // FOR VISUAL DISPLAY PURPOSE: The next_x and next_y variables display a line projection in yellow (waypoints/reference line) according to polynomial fit.
-		  vector<double> next_x_vals;
-		  vector<double> next_y_vals;
+		  //vector<double> next_x_vals;
+		 // vector<double> next_y_vals;
 		  // add (x,y) points to list here, points are in reference to the vehicle's coordinate system
 		  // the points in the simulator are connected by a Yellow line (the line the car is trying to follow)
 		  double poly_inc = 2.5;// distance in x
 		  int num_points = 25; // wanna see 25-points of the future
 
-		  for (int i = 1; i < num_points; i++) {
-			  next_x_vals.push_back(poly_inc * i);
-			  next_y_vals.push_back(polyeval(coeffs, poly_inc * i));
-		  }
+		  vector<double> next_x_vals(ptsx_Eigen.data(), ptsx_Eigen.data() + ptsx_Eigen.rows());
+		  vector<double> next_y_vals(ptsy_Eigen.data(), ptsy_Eigen.data() + ptsy_Eigen.rows());
 
 
 		  // // FOR VISUAL DISPLAY PURPOSE: The mpc_x_vals and mpc_y_vals variables display a line projection in Green representing the MPC predicted trajectory.
-		  vector<double> mpc_x_vals = { state[0] };
-		  vector<double> mpc_y_vals = { state[1] };
-		  // for vars[], every Even value is added to x and every Odd value is added to y.
-		  for (int i = 2; i < vars.size(); i += 2) {
-			  mpc_x_vals.push_back(vars[i]);
-			  mpc_y_vals.push_back(vars[i + 1]);
+		  //Display the MPC predicted trajectory
+		  int N = 7;
+		  vector<double> mpc_x_vals(N);
+		  vector<double> mpc_y_vals(N);
+		  for (int i = 2; i < N; ++i) {
+			  mpc_x_vals[i] = vars[0 + i];
+			  mpc_y_vals[i] = vars[N + i];
 		  }
 
 		  
