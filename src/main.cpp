@@ -105,8 +105,8 @@ int main() {
 			  //Shift car reference angle to 90-degree
 			  double x = ptsx[i] - px;
 			  double y = ptsy[i] - py;
-			  ptsx_transform[i] = x * cos(-psi) - y * sin(-psi);
-			  ptsx_transform[i] = x * sin(-psi) + y * cos(-psi);
+			  ptsx_transform[i] = x * cos(0-psi) - y * sin(0-psi);
+			  ptsx_transform[i] = x * sin(0-psi) + y * cos(0-psi);
 		  }
 
 		 
