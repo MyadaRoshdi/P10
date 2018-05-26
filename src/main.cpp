@@ -144,6 +144,8 @@ int main() {
 		  // Latency for predicting time at actuation
 		  const double dt = 0.1;
 
+		  double Lf = 2.67;
+
 		  // Predict state after latency
 		  // x, y and psi are all zero after transformation above
 		  double pred_px = 0.0 + v * dt; // Since psi is zero, cos(0) = 1, can leave out
@@ -185,7 +187,7 @@ int main() {
 			  mpc_y_vals.push_back(vars[i + 1]);
 		  }
 
-		  double Lf = 2.67;
+		  
 
 		  // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
 		  // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
