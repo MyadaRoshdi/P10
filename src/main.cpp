@@ -96,18 +96,20 @@ int main() {
 		  double a = j[1]["throttle"];//The current throttle value [-1, 1].
 
 
+									  // Transrom the points vectors to Eigen vectors for polyfit in car Coordinates
+		  Eigen::VectorXd ptsx_transform(ptsx.size());
+		  Eigen::VectorXd ptsy_transform(ptsy.size());
+
 		// Transform all the points from simulator (global Cooridinates)to the vehicle's orientation
 		  for (int i = 0; i < ptsx.size(); i++) {
 			  //Shift car reference angle to 90-degree
 			  double x = ptsx[i] - px;
 			  double y = ptsy[i] - py;
-			  ptsx_car[i] = x * cos(-psi) - y * sin(-psi);
-			  ptsy_car[i] = x * sin(-psi) + y * cos(-psi);
+			  ptsx_transform[i] = x * cos(-psi) - y * sin(-psi);
+			  ptsx_transform[i] = x * sin(-psi) + y * cos(-psi);
 		  }
 
-		  // Transrom the points vectors to Eigen vectors for polyfit in car Coordinates
-		  Eigen::VectorXd ptsx_transform(ptsx.size()); 
-		  Eigen::VectorXd ptsy_transform(ptsy.size());
+		 
 
 		  // Fitting the transformed points to  a 3rd - order polynomial
 		  auto coeffs = polyfit(ptsx_transform, ptsy_transform, 3);
@@ -165,13 +167,14 @@ int main() {
 			  mpc_y_vals.push_back(vars[i + 1]);
 		  }
 
+		  double Lf = 2.67;
 
 		  // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
 		  // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
           double steer_value = vars[0] / (deg2rad(25) * Lf);;
           double throttle_value = vars[1];
 
-		  double Lf = 2.67;
+		  
 
           json msgJson;
           
