@@ -96,28 +96,36 @@ int main() {
 		  double a = j[1]["throttle"];//The current throttle value [-1, 1].
 
 
-									  // Transrom the points vectors to Eigen vectors for polyfit in car Coordinates
-		  Eigen::VectorXd ptsx_transform(ptsx.size());
-		  Eigen::VectorXd ptsy_transform(ptsy.size());
+	 // Latency for predicting time at actuation
+		  const double dt = 0.1;
 
-		// Transform all the points from simulator (global Cooridinates)to the vehicle's orientation
-		  for (int i = 0; i < ptsx.size(); i++) {
-			  //Shift car reference angle to 90-degree
-			  double x = ptsx[i] - px;
-			  double y = ptsy[i] - py;
-			  ptsx_transform[i] = x * cos(0-psi) - y * sin(0-psi);
-			  ptsx_transform[i] = x * sin(0-psi) + y * cos(0-psi);
-		  }
+		  double Lf = 2.67;
+
+
+
+	    px = px + v * cos(psi) * dt;
+		py = py + v * sin(psi) * dt;
+		v = v + a * dt;
+		psi = psi - v / Lf * delta * dt;
+
+		// transform into vehicle coordinate
+		Eigen::VectorXd ptsx_Eigen(ptsx.size());
+		Eigen::VectorXd ptsy_Eigen(ptsy.size());
+		for (size_t i = 0; i < ptsx.size(); ++i) {
+			ptsx_Eigen[i] = cos(psi) * (ptsx[i] - px) + sin(psi) * (ptsy[i] - py);
+			ptsy_Eigen[i] = -sin(psi) * (ptsx[i] - px) + cos(psi) * (ptsy[i] - py);
+		}
+
+		// Fitting the transformed points to  a 3rd - order polynomial
+
+		auto coeffs = polyfit(ptsx_Eigen, ptsy_Eigen, 3);
 
 		 
-
-		  // Fitting the transformed points to  a 3rd - order polynomial
-		  auto coeffs = polyfit(ptsx_transform, ptsy_transform, 3);
 
 	      // Calculate Initial cte, now transformed points are in vehicle coordinates, so x & y equal 0 below.
 		  // otherwise y shoud be subtracted from the polyeval value
 		 // double cte = polyeval(coeffs, 0); // Our target: it to turn cte =0
-		  double cte = polyeval(coeffs, x) - y;
+		 double cte = coeffs[0];
 
 		  // Calculate the Initial orientation error
 		 // double epsi = psi - -atan(coeffs[1]+ 2 * px * coeffs[2] + 3 * coeffs[3] * pow(px,2))
@@ -134,31 +142,13 @@ int main() {
 
 
 
-          /*
-          * Calculate steering angle and throttle using MPC.
-          *
-          * Both are in between [-1, 1].
+         
 
-          *
-          */
-
-		  // Latency for predicting time at actuation
-		  const double dt = 0.1;
-
-		  double Lf = 2.67;
-
-		  // Predict state after latency
-		  // x, y and psi are all zero after transformation above
-		  double pred_px = 0.0 + v * dt; // Since psi is zero, cos(0) = 1, can leave out
-		  const double pred_py = 0.0; // Since sin(0) = 0, y stays as 0 (y + v * 0 * dt)
-		  double pred_psi = 0.0 + v * -delta / Lf * dt;
-		  double pred_v = v + a * dt;
-		  double pred_cte = cte + v * sin(epsi) * dt;
-		  double pred_epsi = epsi + v * -delta / Lf * dt;
-
+		 
+		  
 		  // Feed in the predicted state values
 		 
-		  state << pred_px, pred_py, pred_psi, pred_v, pred_cte, pred_epsi;
+		  //state << pred_px, pred_py, pred_psi, pred_v, pred_cte, pred_epsi;
 
 
 		  // Call Solve for new actuations (and to show predicted x and y in the future)
@@ -192,7 +182,7 @@ int main() {
 
 		  // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
 		  // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          double steer_value = vars[0] / (deg2rad(25) * Lf);;
+          double steer_value = -vars[0] / (deg2rad(25) );
           double throttle_value = vars[1];
 
 		  
