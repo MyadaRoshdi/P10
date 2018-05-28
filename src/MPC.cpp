@@ -5,9 +5,9 @@
 
 using CppAD::AD;
 
-// TODO: Set the timestep length and duration
+// Set the timestep length and duration
 size_t N = 10;
-double dt = .1;
+double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -56,12 +56,12 @@ class FG_eval {
 	  fg[0] = 0;
 
 	  // Weights for how much attention the cost function will pay for  each of these cost terms(Attributes), Values can be tuned!
-	  const int cte_cost_weight = 2000;
-	  const int epsi_cost_weight = 2000;
+	  const int cte_cost_weight = 3000;
+	  const int epsi_cost_weight = 3000;
 	  const int v_cost_weight = 1;
-	  const int delta_cost_weight = 10;
-	  const int a_cost_weight = 10;
-	  const int delta_change_cost_weight = 100;
+	  const int delta_cost_weight = 5;
+	  const int a_cost_weight = 5;
+	  const int delta_change_cost_weight = 200;
 	  const int a_change_cost_weight = 10;
 
 
@@ -122,6 +122,11 @@ class FG_eval {
 		  // Only consider the actuation at time t.
 		  AD<double> delta0 = vars[delta_start + t - 1];
 		  AD<double> a0 = vars[a_start + t - 1];
+
+		  if (t > 1) {   //Use previous actuations (to account for latency)
+			  a = vars[a_start + t - 2];
+			  delta = vars[delta_start + t - 2];
+		  }
 
 		  AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * pow(x0, 2) + coeffs[3] * pow(x0, 3);
 		  AD<double> psi_des0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * pow(x0, 2)); // Desired psi-value
@@ -266,7 +271,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 	result.push_back(solution.x[delta_start]);
 	result.push_back(solution.x[a_start]);
 
-	for (int i = 0; i < N-1; i++) {
+	for (int i = 0; i < N - 1; i++) {
 		result.push_back(solution.x[x_start + i + 1]);
 		result.push_back(solution.x[y_start + i + 1]);
 	}

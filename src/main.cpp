@@ -94,39 +94,39 @@ int main() {
           double v = j[1]["speed"];// The current velocity in mph.
 		  double delta = j[1]["steering_angle"];//The current steering angle in radians.
 		  double a = j[1]["throttle"];//The current throttle value [-1, 1].
-
-		  v = v * 1609. / 3600.; //mph to m/s 
-
-	 // Latency for predicting time at actuation
+ 
+	     // Latency for predicting time at actuation
 		  const double dt = 0.1;
 
 		  double Lf = 2.67;
 
 
+		// Transform from Simulator into car coordinate
+		  // this means we can consider px = 0, py = 0, and psi = 0
+		  // 
+		  for (int i = 0; i < ptsx.size(); i++) {
+			  double shift_x = ptsx[i] - px;
+			  double shift_y = ptsy[i] - py;
+			  // Rotating around the origin
+			  ptsx[i] = (shift_x * cos(-psi) - shift_y * sin(-psi));
+			  ptsy[i] = (shift_x * sin(-psi) + shift_y * cos(-psi));
+		  }
 
-	    px = px + v * cos(psi) * dt;
-		py = py + v * sin(psi) * dt;
-		v = v + a * dt;
-		psi = psi - v / Lf * delta * dt;
 
-		// transform into vehicle coordinate
-		Eigen::VectorXd ptsx_Eigen(ptsx.size());
-		Eigen::VectorXd ptsy_Eigen(ptsy.size());
-		for (size_t i = 0; i < ptsx.size(); ++i) {
-			ptsx_Eigen[i] = cos(psi) * (ptsx[i] - px) + sin(psi) * (ptsy[i] - py);
-			ptsy_Eigen[i] = -sin(psi) * (ptsx[i] - px) + cos(psi) * (ptsy[i] - py);
-		}
+		  double* ptrx = &ptsx[0];
+		  double* ptry = &ptsy[0];
+		  Eigen::Map<Eigen::VectorXd> ptsx_transform(ptrx, 6);
+		  Eigen::Map<Eigen::VectorXd> ptsy_transform(ptry, 6);
 
 		// Fitting the transformed points to  a 3rd - order polynomial
+		  auto coeffs = polyfit(ptsx_transform, ptsy_transform, 3);
 
-		auto coeffs = polyfit(ptsx_Eigen, ptsy_Eigen, 3);
-
-		 
 
 	      // Calculate Initial cte, now transformed points are in vehicle coordinates, so x & y equal 0 below.
 		  // otherwise y shoud be subtracted from the polyeval value
-		 // double cte = polyeval(coeffs, 0); // Our target: it to turn cte =0
-		 double cte = coeffs[0];
+		 // cte is the error difference between the car & the waypoints(transformed) // Our target: it to turn cte =0
+		  double cte = polyeval(coeffs, 0);  // px = 0, py = 0 (after transformation)
+		  
 
 		  // Calculate the Initial orientation error
 		 // double epsi = psi - -atan(coeffs[1]+ 2 * px * coeffs[2] + 3 * coeffs[3] * pow(px,2))
@@ -134,22 +134,11 @@ int main() {
 	
 
 		  // double epsi = psi - -atan(coeffs[1]+ 2 * px * coeffs[2] + 3 * coeffs[3] * pow(px,2))
-		  double epsi = -atan(coeffs[1]); // simplification of the above equation of epsi, and our target: is to turn epsi = 0
+		  double epsi = -atan(coeffs[1]);  // p // simplification of the above equation of epsi, and our target: is to turn epsi = 0
 
-		// Initial state values (in car coordinates)
+		// Initial state values (in car coordinates)[fed to the IPOPT]
 		  Eigen::VectorXd state(6);
 		  state << 0, 0, 0, v, cte, epsi;//  vector state -->[ x,y,psi,v,cte,epsi]
-
-
-
-
-         
-
-		 
-		  
-		  // Feed in the predicted state values
-		 
-		  //state << pred_px, pred_py, pred_psi, pred_v, pred_cte, pred_epsi;
 
 
 		  // Call Solve for new actuations (and to show predicted x and y in the future)
@@ -157,32 +146,34 @@ int main() {
 
 
 		  // FOR VISUAL DISPLAY PURPOSE: The next_x and next_y variables display a line projection in yellow (waypoints/reference line) according to polynomial fit.
-		  //vector<double> next_x_vals;
-		 // vector<double> next_y_vals;
+		  vector<double> next_x_vals;
+		  vector<double> next_y_vals;
 		  // add (x,y) points to list here, points are in reference to the vehicle's coordinate system
 		  // the points in the simulator are connected by a Yellow line (the line the car is trying to follow)
-		  double poly_inc = 2.5;// distance in x
-		  int num_points = 25; // wanna see 25-points of the future
-
-		  vector<double> next_x_vals(ptsx_Eigen.data(), ptsx_Eigen.data() + ptsx_Eigen.rows());
-		  vector<double> next_y_vals(ptsy_Eigen.data(), ptsy_Eigen.data() + ptsy_Eigen.rows());
-
+		  for (double i = 0; i < 100; i += 3) {
+			  next_x_vals.push_back(i);
+			  next_y_vals.push_back(polyeval(coeffs, i));
+		  }
 
 		  // // FOR VISUAL DISPLAY PURPOSE: The mpc_x_vals and mpc_y_vals variables display a line projection in Green representing the MPC predicted trajectory.
 		  //Display the MPC predicted trajectory
-		  int N = 7;
-		  vector<double> mpc_x_vals(N);
-		  vector<double> mpc_y_vals(N);
-		  for (int i = 2; i < N; ++i) {
-			  mpc_x_vals[i] = vars[0 + i];
-			  mpc_y_vals[i] = vars[N + i];
+		  vector<double> mpc_x_vals;
+		  vector<double> mpc_y_vals;
+		  // Even order of i represent x and odd represent y.
+		  for (int i = 2; i < vars.size(); i++) {
+			  if (i % 2 == 0) {
+				  mpc_x_vals.push_back(vars[i]);
+			  }
+			  else {
+				  mpc_y_vals.push_back(vars[i]);
+			  }
 		  }
 
 		  
 
 		  // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
 		  // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          double steer_value = -vars[0] / (deg2rad(25) );
+          double steer_value = vars[0] / (deg2rad(25) );
           double throttle_value = vars[1];
 
 		  
