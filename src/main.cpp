@@ -92,8 +92,8 @@ int main() {
           double py = j[1]["y"];//The global y position of the vehicle.
           double psi = j[1]["psi"];//The orientation of the vehicle in radians converted from the Unity format to the standard format expected in most mathemetical functions
           double v = j[1]["speed"];// The current velocity in mph.
-		  double delta = j[1]["steering_angle"];//The current steering angle in radians.
-		  double a = j[1]["throttle"];//The current throttle value [-1, 1].
+          double delta = j[1]["steering_angle"];//The current steering angle in radians.
+          double a = j[1]["throttle"];//The current throttle value [-1, 1].
  
 	     // Latency for predicting time at actuation
 		  const double dt = 0.1;
@@ -108,8 +108,8 @@ int main() {
 			  double shift_x = ptsx[i] - px;
 			  double shift_y = ptsy[i] - py;
 			  // Rotating around the origin
-			  ptsx[i] = (shift_x * cos(-psi) - shift_y * sin(-psi));
-			  ptsy[i] = (shift_x * sin(-psi) + shift_y * cos(-psi));
+			  ptsx[i] = (shift_x * cos(0-psi) - shift_y * sin(0-psi));
+			  ptsy[i] = (shift_x * sin(0-psi) + shift_y * cos(0-psi));
 		  }
 
 
