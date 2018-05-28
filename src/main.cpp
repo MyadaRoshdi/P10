@@ -148,11 +148,13 @@ int main() {
 		  // FOR VISUAL DISPLAY PURPOSE: The next_x and next_y variables display a line projection in yellow (waypoints/reference line) according to polynomial fit.
 		  vector<double> next_x_vals;
 		  vector<double> next_y_vals;
+		  double poly_inc = 2.5;
+		  int num_points = 25;
 		  // add (x,y) points to list here, points are in reference to the vehicle's coordinate system
 		  // the points in the simulator are connected by a Yellow line (the line the car is trying to follow)
-		  for (double i = 0; i < 100; i += 3) {
-			  next_x_vals.push_back(i);
-			  next_y_vals.push_back(polyeval(coeffs, i));
+		  for (int i = 1; i < num_points ; i ++) {
+			  next_x_vals.push_back(poly_inc*i);
+			  next_y_vals.push_back(polyeval(coeffs, poly_inc*i));
 		  }
 
 		  // // FOR VISUAL DISPLAY PURPOSE: The mpc_x_vals and mpc_y_vals variables display a line projection in Green representing the MPC predicted trajectory.
