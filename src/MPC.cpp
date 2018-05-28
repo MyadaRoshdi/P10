@@ -56,8 +56,8 @@ class FG_eval {
 	  fg[0] = 0;
 
 	  // Weights for how much attention the cost function will pay for  each of these cost terms(Attributes), Values can be tuned!
-	  const int cte_cost_weight = 3000;
-	  const int epsi_cost_weight = 3000;
+	  const int cte_cost_weight = 4000;
+	  const int epsi_cost_weight = 4000;
 	  const int v_cost_weight = 1;
 	  const int delta_cost_weight = 5;
 	  const int a_cost_weight = 5;
@@ -123,11 +123,11 @@ class FG_eval {
 		  AD<double> delta0 = vars[delta_start + t - 1];
 		  AD<double> a0 = vars[a_start + t - 1];
 		  
-
+                  /*
 		  if (t > 1) {   //Use previous actuations (to account for latency)
 			  a0 = vars[a_start + t - 2];
 			  delta0 = vars[delta_start + t - 2];
-		  }
+		  }*/
 
 		  AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * pow(x0, 2) + coeffs[3] * pow(x0, 3);
 		  AD<double> psi_des0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * pow(x0, 2)); // Desired psi-value
