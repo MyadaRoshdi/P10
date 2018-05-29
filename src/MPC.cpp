@@ -6,7 +6,7 @@
 using CppAD::AD;
 
 // Set the timestep length and duration
-size_t N = 7;
+size_t N = 10;
 double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
@@ -23,7 +23,9 @@ const double Lf = 2.67;
 
 // Both the reference cross track and orientation errors are 0.
 // The reference velocity is set to 100 mph (maximum speed).
-const double ref_v = 100;
+double ref_cte = 0;
+double ref_epsi = 0;
+ double ref_v = 100;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
@@ -56,32 +58,32 @@ class FG_eval {
 	  fg[0] = 0;
 
 	  // Weights for how much attention the cost function will pay for  each of these cost terms(Attributes), Values can be tuned!
-	  const int cte_cost_weight = 3000;
-	  const int epsi_cost_weight = 3000;
-	  const int v_cost_weight = 1;
-	  const int delta_cost_weight = 5;
-	  const int a_cost_weight = 5;
-	  const int delta_change_cost_weight = 200;
-	  const int a_change_cost_weight = 10;
+	  const int cte_weight = 2000;
+	  const int epsi_weight = 2000;
+	  const int v_weight = 1;
+	  const int delta_weight = 5;
+	  const int a_weight = 5;
+	  const int delta_changeweight = 200;
+	  const int a_change_weight = 10;
 
 
 	  // The part of the cost based on the reference state, fg[0] = sum (cost of cte + cost of epsi + cost of ev).
 	  for (int t = 0; t < N; t++) {
-		  fg[0] += cte_cost_weight * CppAD::pow(vars[cte_start + t], 2);
-		  fg[0] += epsi_cost_weight * CppAD::pow(vars[epsi_start + t], 2);
-		  fg[0] += v_cost_weight * CppAD::pow(vars[v_start + t] - ref_v, 2);
+		  fg[0] += cte_weight * CppAD::pow(vars[cte_start + t], 2);
+		  fg[0] += epsi_weight * CppAD::pow(vars[epsi_start + t], 2);
+		  fg[0] += v_weight * CppAD::pow(vars[v_start + t] - ref_v, 2);
 	  }
 
 	  // Minimize the use of actuators ( cost of steering and acceleration).
 	  for (int t = 0; t < N - 1; t++) {
-		  fg[0] += delta_cost_weight * CppAD::pow(vars[delta_start + t], 2);
-		  fg[0] += a_cost_weight * CppAD::pow(vars[a_start + t], 2);
+		  fg[0] += delta_weight * CppAD::pow(vars[delta_start + t], 2);
+		  fg[0] += a_weight * CppAD::pow(vars[a_start + t], 2);
 	  }
 
 	  // Minimize the value gap between sequential actuations ( Makes the drive smoother).
 	  for (int t = 0; t < N - 2; t++) {
-		  fg[0] += delta_change_cost_weight * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
-		  fg[0] += a_change_cost_weight * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
+		  fg[0] += delta_change_weight * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+		  fg[0] += a_change_weight * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
   }
 
 	  //
@@ -102,32 +104,28 @@ class FG_eval {
 	  fg[1 + epsi_start] = vars[epsi_start];
 
 	  // The rest of the constraints
-	  for (int t = 1; t < N; t++) {
+	  for (int t = 0; t < N-1; t++) {
 		  // The state at time t+1 .
-		  AD<double> x1 = vars[x_start + t];
-		  AD<double> y1 = vars[y_start + t];
-		  AD<double> psi1 = vars[psi_start + t];
-		  AD<double> v1 = vars[v_start + t];
-		  AD<double> cte1 = vars[cte_start + t];
-		  AD<double> epsi1 = vars[epsi_start + t];
+		  AD<double> x1 = vars[x_start + t + 1];
+		  AD<double> y1 = vars[y_start +  t + 1];
+		  AD<double> psi1 = vars[psi_start +  t + 1];
+		  AD<double> v1 = vars[v_start +  t + 1];
+		  AD<double> cte1 = vars[cte_start +  t + 1];
+		  AD<double> epsi1 = vars[epsi_start +  t + 1];
 
 		  // The state at time t.
-		  AD<double> x0 = vars[x_start + t - 1];
-		  AD<double> y0 = vars[y_start + t - 1];
-		  AD<double> psi0 = vars[psi_start + t - 1];
-		  AD<double> v0 = vars[v_start + t - 1];
-		  AD<double> cte0 = vars[cte_start + t - 1];
-		  AD<double> epsi0 = vars[epsi_start + t - 1];
+		  AD<double> x0 = vars[x_start + t];
+		  AD<double> y0 = vars[y_start + t];
+		  AD<double> psi0 = vars[psi_start + t];
+		  AD<double> v0 = vars[v_start + t];
+		  AD<double> cte0 = vars[cte_start + t];
+		  AD<double> epsi0 = vars[epsi_start + t];
 
 		  // Only consider the actuation at time t.
-		  AD<double> delta0 = vars[delta_start + t - 1];
-		  AD<double> a0 = vars[a_start + t - 1];
+		  AD<double> delta0 = vars[delta_start + t];
+		  AD<double> a0 = vars[a_start + t];
 		  
                   
-		  if (t > 1) {   //Use previous actuations (to account for latency)
-			  a0 = vars[a_start + t - 2];
-			  delta0 = vars[delta_start + t - 2];
-		  }
 
 		  AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * pow(x0, 2) + coeffs[3] * pow(x0, 3);
 		  AD<double> psi_des0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * pow(x0, 2)); // Desired psi-value
@@ -142,12 +140,12 @@ class FG_eval {
 		  // v_[t+1] = v[t] + a[t] * dt
 		  // cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
 		  // epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
-		  fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
-		  fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-		  fg[1 + psi_start + t] = psi1 - (psi0 - v0 * delta0 / Lf * dt);
-		  fg[1 + v_start + t] = v1 - (v0 + a0 * dt);
-		  fg[1 + cte_start + t] = cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
-		  fg[1 + epsi_start + t] = epsi1 - ((psi0 - psi_des0) + v0 * delta0 / Lf * dt);
+		  fg[2 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
+		  fg[2 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
+		  fg[2 + psi_start + t] = psi1 - (psi0 - v0 * delta0 / Lf * dt);
+		  fg[2 + v_start + t] = v1 - (v0 + a0 * dt);
+		  fg[2 + cte_start + t] = cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+		  fg[2 + epsi_start + t] = epsi1 - ((psi0 - psi_des0) + v0 * delta0 / Lf * dt);
 	  }
   }
 };
@@ -196,8 +194,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 	// The upper and lower limits of delta are set to -25 and 25
 	// degrees (values in radians).
 	for (int i = delta_start; i < a_start; i++) {
-		vars_lowerbound[i] = -0.436332 ;
-		vars_upperbound[i] = 0.436332 ;
+		vars_lowerbound[i] = -1.0 ;
+		vars_upperbound[i] =  1.0;
 	}
 
 	// Acceleration/decceleration upper and lower limits.

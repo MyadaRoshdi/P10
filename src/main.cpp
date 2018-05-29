@@ -92,13 +92,9 @@ int main() {
           double py = j[1]["y"];//The global y position of the vehicle.
           double psi = j[1]["psi"];//The orientation of the vehicle in radians converted from the Unity format to the standard format expected in most mathemetical functions
           double v = j[1]["speed"];// The current velocity in mph.
-          double delta = j[1]["steering_angle"];//The current steering angle in radians.
-          double a = j[1]["throttle"];//The current throttle value [-1, 1].
+          double steer_value = j[1]["steering_angle"];//The current steering angle in radians.
+          double throttle_value = j[1]["throttle"];//The current throttle value [-1, 1].
  
-	     // Latency for predicting time at actuation
-		  const double dt = 0.1;
-
-		  double Lf = 2.67;
 
 
 		// Transform from Simulator into car coordinate
@@ -136,9 +132,25 @@ int main() {
 		  // double epsi = psi - -atan(coeffs[1]+ 2 * px * coeffs[2] + 3 * coeffs[3] * pow(px,2))
 		  double epsi = -atan(coeffs[1]);  // p // simplification of the above equation of epsi, and our target: is to turn epsi = 0
 
-		// Initial state values (in car coordinates)[fed to the IPOPT]
+        // set delay for Latency fix
+		double dt = 0.1;
+		
+		// Lf value depends of the size of the  car(don't change)
+		const double Lf = 2.67;
+
+       // Add the delay factor to car states to solve latency problem
+	   //factor in delay
+          double delay_x = v*dt;
+          double delay_y = 0;
+          double delay_psi = -v*steer_value / Lf * dt;
+          double delay_v = v + throttle_value*dt;
+          double delay_cte = cte + v*sin(epsi)*dt;
+          double delay_epsi = epsi-v*steer_value /Lf * dt;
+
+
+		//  state values (in car coordinates)[fed to the IPOPT]
 		  Eigen::VectorXd state(6);
-		  state << 0, 0, 0, v, cte, epsi;//  vector state -->[ x,y,psi,v,cte,epsi]
+		  state << delay_x, delay_y, delay_psi, delay_v, delay_cte, delay_epsi;//  vector state -->[ x,y,psi,v,cte,epsi]
 
 
 		  // Call Solve for new actuations (and to show predicted x and y in the future)
@@ -175,15 +187,15 @@ int main() {
 
 		  // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
 		  // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          double steer_value = vars[0] / (deg2rad(25)*Lf );
-          double throttle_value = vars[1];
+         // double steer_value = vars[0] / (deg2rad(25)*Lf );
+          //double throttle_value = vars[1];
 
 		  
 
           json msgJson;
           
-          msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = throttle_value;
+          msgJson["steering_angle"] = vars[0];
+          msgJson["throttle"] = vars[1];
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
           msgJson["mpc_x"] = mpc_x_vals;
