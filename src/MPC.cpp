@@ -63,7 +63,7 @@ class FG_eval {
 	  const int v_weight = 1;
 	  const int delta_weight = 5;
 	  const int a_weight = 5;
-	  const int delta_changeweight = 200;
+	  const int delta_change_weight = 200;
 	  const int a_change_weight = 10;
 
 
