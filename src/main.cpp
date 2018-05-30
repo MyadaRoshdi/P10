@@ -104,8 +104,8 @@ int main() {
 			  double shift_x = ptsx[i] - px;
 			  double shift_y = ptsy[i] - py;
 			  // Rotating around the origin
-			  ptsx[i] = (shift_x * cos(0-psi) - shift_y * sin(0-psi));
-			  ptsy[i] = (shift_x * sin(0-psi) + shift_y * cos(0-psi));
+			  ptsx[i] = (shift_x * cos(-psi) - shift_y * sin(-psi));
+			  ptsy[i] = (shift_x * sin(-psi) + shift_y * cos(-psi));
 		  }
 
 
@@ -121,7 +121,7 @@ int main() {
 	      // Calculate Initial cte, now transformed points are in vehicle coordinates, so x & y equal 0 below.
 		  // otherwise y shoud be subtracted from the polyeval value
 		 // cte is the error difference between the car & the waypoints(transformed) // Our target: it to turn cte =0
-		  double cte = polyeval(coeffs, px);  // px = 0, py = 0 (after transformation)
+		  double cte = polyeval(coeffs, 0);  // px = 0, py = 0 (after transformation)
 		  
 
 		  // Calculate the Initial orientation error
@@ -129,8 +129,8 @@ int main() {
 		  // Since initially  x = 0 in the vehicle coordinates, so the higher orders are zero and also psi=0 (initially)
 	
 
-		   double epsi = psi-atan(coeffs[1]+ 2 * px * coeffs[2] + 3 * coeffs[3] * pow(px,2));
-		 //double epsi = -atan(coeffs[1]);  // p // simplification of the above equation of epsi, and our target: is to turn epsi = 0
+		 // double epsi = psi-atan(coeffs[1]+ 2 * px * coeffs[2] + 3 * coeffs[3] * pow(px,2));
+		 double epsi = -atan(coeffs[1]);  // p // simplification of the above equation of epsi, and our target: is to turn epsi = 0
 
         // set delay for Latency fix
 		double dt = 0.1;
