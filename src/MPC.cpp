@@ -58,7 +58,7 @@ class FG_eval {
 	  fg[0] = 0;
 
 	  // Weights for how much attention the cost function will pay for  each of these cost terms(Attributes), Values can be tuned!
-	  const int cte_weight = 3000;
+	  const int cte_weight = 2000;
 	  const int epsi_weight = 3000;
 	  const int v_weight = 1;
 	  const int delta_weight = 5;
