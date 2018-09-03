@@ -2,7 +2,64 @@
 Self-Driving Car Engineer Nanodegree Program
 
 ---
+## [Rubric](https://review.udacity.com/#!/rubrics/896/view) points discussion
 
+### The Model
+The kinematic model includes:
+- vehicle's x and y coordinates
+- orientation angle (psi)
+- velocity
+- cross-track error (cte)
+- psi error (epsi). 
+Outputs from the actuators are acceleration and delta (steering angle).
+POPSI model combines the state and actuations from the previous timestep to calculate the state for the current timestep based on the following equations:
+
+    // x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt
+		  // y_[t+1] = y[t] + v[t] * sin(psi[t]) * dt
+		  // psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
+		  // v_[t+1] = v[t] + a[t] * dt
+		  // cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
+		  // epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
+### Timestep Length and Elapsed Duration (N & dt)
+The values chosen for N and dt are 8 and 0.1. I started with the values suggesed ( N = 10 , dt = 0.1) and then did some experiments varying the values ( 10>N>7) (0.2 >dt>0.08) till I got the best behaviour.
+
+Also Weights for how much attention the cost function will pay for  each of these cost terms(Attributes), are tuned to the following values: 
+	  - cte_weight = 2000;
+	  - epsi_weight = 3000;
+	  - v_weight = 1;
+	  - delta_weight = 5;
+	  - a_weight = 5;
+	  - delta_change_weight = 200;
+	  - a_change_weight = 10;
+### Polynomial Fitting and MPC Preprocessing
+// Transform from Simulator into car coordinate
+		  // this means we can consider px = 0, py = 0, and psi = 0
+		  // 
+		  for (int i = 0; i < ptsx.size(); i++) {
+			  double shift_x = ptsx[i] - px;
+			  double shift_y = ptsy[i] - py;
+			  // Rotating around the origin
+			  ptsx[i] = (shift_x * cos(-psi) - shift_y * sin(-psi));
+			  ptsy[i] = (shift_x * sin(-psi) + shift_y * cos(-psi));
+		  }
+
+
+		  double* ptrx = &ptsx[0];
+		  double* ptry = &ptsy[0];
+		  Eigen::Map<Eigen::VectorXd> ptsx_transform(ptrx, 6);
+		  Eigen::Map<Eigen::VectorXd> ptsy_transform(ptry, 6);
+
+		// Fitting the transformed points to  a 3rd - order polynomial
+		  auto coeffs = polyfit(ptsx_transform, ptsy_transform, 3);
+### Model Predictive Control with Latency
+ In the model equations the actuations from the previous timestep are generated with a delay of 100ms. 
+ Model update equations are used as follows:
+    fg[2 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
+		  fg[2 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
+		  fg[2 + psi_start + t] = psi1 - (psi0 - v0 * delta0 / Lf * dt);
+		  fg[2 + v_start + t] = v1 - (v0 + a0 * dt);
+		  fg[2 + cte_start + t] = cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+		  fg[2 + epsi_start + t] = epsi1 - ((psi0 - psi_des0) - v0 * delta0 / Lf * dt);
 ## Dependencies
 
 * cmake >= 3.5
